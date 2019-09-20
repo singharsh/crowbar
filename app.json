@@ -13,6 +13,7 @@
   },
   "name": "crowbar",
   "scripts": {
+	  "start": "cd server && npm start"
   },
   "stack": "heroku-18"
 }
