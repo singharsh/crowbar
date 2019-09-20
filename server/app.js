@@ -123,8 +123,9 @@ app.post('/repos', (req, res) => {
 });
 
 // listen for requests
-app.listen(config.app.port, () => {
-    console.log("server is listening on port " + config.app.port);
+let port = process.env.PORT || config.app.port;
+app.listen(port, () => {
+    console.log("server is listening on port " + port);
 });
 
 module.exports = { app };
