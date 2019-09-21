@@ -2,7 +2,9 @@
   "name": "foobar-app",
   "version": "0.1.0",
   "scripts": {
-    "start": "npm start --prefix server" ,  
+    "start": "npm start --prefix server",
     "postinstall": "npm install --prefix server"
+  },
+  "dependencies": {
   }
 }

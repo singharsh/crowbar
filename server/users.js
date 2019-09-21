@@ -1,54 +1,47 @@
-const tingoDB = require('tingodb')().Db;
-const config = require('./config');
+const util = require('./db');
 
-// database connection
-const db = new tingoDB(config.db.path, {});
-
-const get = async function (user) {
+async function get(user) {
     // TODO: return user name & email
-    return await db.collection('users').findOne({username: user}, 
-        function(error, item) {
-            if (error) {
-                console.log(error);
-            }
-            if (item) {
-                const result = {
-                    "username": item.username,
-                    "email": item.email
-                };
-                console.log(result)
-                return result;
-            }
-            return {}; 
-        });
+    const db = util.get();
+    let items = await db.collection('users').find({"username": user}, {}).toArray();
+    for (i = 0; i < items.length; i++) {
+        const result = {
+            "username": items[i].username,
+            "email": items[i].email
+        };
+        return result;
+    }
+    return {};
 }
 
-function exists(user) {
+async function exists(user) {
     // TODO: return true if the user exists, false otherwise
-    let item = db.collection('users').find({"username": user});
-    if (item) {
-        return true;
-    } else {
-        false;
-    }
+    const db = util.get();
+    let items = await db.collection('users').find({"username": user}, {}).toArray().then(items => {
+        return items;
+    });
+    return items.length > 0;
 }
 
-function authenticate(user, password) {
+async function authenticate(user, password) {
     // TODO: return true if the user name and password match, false otherwise
-    let item = db.collection('users').find({"username": user});
-    if (item) {
-        return item.password == password;
-    } else {
-        return false;
+    const db = util.get();
+    let items = await db.collection('users').find({"username": user}, {}).toArray().then(items => {
+        return items;
+    });
+    for (i = 0; i < items.length; i++) {
+        return items[i].password == password;
     }
+    return false;
 }
 
-function create(user, password, email) {
+async function create(user, password, email) {
     // TODO: create a user with the given crdentials and return true, false if the user already exists
     if (exists(user)) {
         return false;
     }
-    db.collection('users').insert({
+    const db = util.get();
+    await db.collection('users').insertOne({
         "username": user,
         "password": password,
         "email": email
@@ -56,12 +49,12 @@ function create(user, password, email) {
     return true;
 }
 
-function updatePassword(user, password) {
+async function updatePassword(user, password) {
     // TODO: update password of the given user if the user exists and return true, false otherwise
     return false;
 }
 
-function updateEmail(user, email) {
+async function updateEmail(user, email) {
     // TODO: update email of the given user if the user exists and return true, false otherwise
     return false;
 }

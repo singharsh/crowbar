@@ -3,7 +3,7 @@ const config = {
       port: 8080
     },
     db: {
-      path: './db'
+      uri: 'mongodb+srv://crowbar:crowbar@crowbar-xrbmq.mongodb.net/test?retryWrites=true&w=majority'
     }
    };
    
