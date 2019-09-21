@@ -37,11 +37,11 @@ async function authenticate(user, password) {
 
 async function create(user, password, email) {
     // TODO: create a user with the given crdentials and return true, false if the user already exists
-    if (exists(user)) {
+    if (await exists(user)) {
         return false;
     }
     const db = util.get();
-    await db.collection('users').insertOne({
+    db.collection('users').insertOne({
         "username": user,
         "password": password,
         "email": email
