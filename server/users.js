@@ -1,7 +1,7 @@
 const util = require('./db');
 
 async function get(user) {
-    // TODO: return user name & email
+    // return user name & email
     const db = util.get();
     let items = await db.collection('users').find({"username": user}, {}).toArray();
     for (i = 0; i < items.length; i++) {
@@ -11,20 +11,25 @@ async function get(user) {
         };
         return result;
     }
-    return {};
+    return null;
 }
 
 async function exists(user) {
-    // TODO: return true if the user exists, false otherwise
+    // return true if the user exists, false otherwise
     const db = util.get();
     let items = await db.collection('users').find({"username": user}, {}).toArray().then(items => {
         return items;
     });
-    return items.length > 0;
+    for (i = 0; i < items.length; i++) {
+        if (!items[i].deleted) {
+            return true;
+        }
+    }
+    return false;
 }
 
 async function authenticate(user, password) {
-    // TODO: return true if the user name and password match, false otherwise
+    // return true if the user name and password match, false otherwise
     const db = util.get();
     let items = await db.collection('users').find({"username": user}, {}).toArray().then(items => {
         return items;
@@ -36,27 +41,61 @@ async function authenticate(user, password) {
 }
 
 async function create(user, password, email) {
-    // TODO: create a user with the given crdentials and return true, false if the user already exists
+    // create a user with the given crdentials and return true, false if the user already exists
     if (await exists(user)) {
         return false;
     }
     const db = util.get();
-    db.collection('users').insertOne({
+    await db.collection('users').remove({"username": user}, {});
+    await db.collection('users').insertOne({
         "username": user,
         "password": password,
-        "email": email
+        "email": email,
+        "deleted": false
     });
     return true;
 }
 
+async function remove(user) {
+    // remove user if exists and return true, false otherwise
+    if (!await exists(user)) {
+        return false;
+    }
+    const db = util.get();
+    return await db.collection('users').updateOne({"username": user}, {"$set": {"deleted": true}}, {}).then(result => {
+        const { matchedCount, modifiedCount } = result;
+        if (matchedCount && modifiedCount) {
+            return true;
+        }
+    });
+}
+
 async function updatePassword(user, password) {
-    // TODO: update password of the given user if the user exists and return true, false otherwise
-    return false;
+    // update password of the given user if the user exists and return true, false otherwise
+    if (!await exists(user)) {
+        return false;
+    }
+    const db = util.get();
+    return await db.collection('users').updateOne({"username": user}, {"$set": {"password": password}}, {}).then(result => {
+        const { matchedCount, modifiedCount } = result;
+        if (matchedCount && modifiedCount) {
+            return true;
+        }
+    });
 }
 
 async function updateEmail(user, email) {
-    // TODO: update email of the given user if the user exists and return true, false otherwise
-    return false;
+    // update email of the given user if the user exists and return true, false otherwise
+    if (!await exists(user)) {
+        return false;
+    }
+    const db = util.get();
+    return await db.collection('users').updateOne({"username": user}, {"$set": {"email": email}}, {}).then(result => {
+        const { matchedCount, modifiedCount } = result;
+        if (matchedCount && modifiedCount) {
+            return true;
+        }
+    });
 }
 
-module.exports = { get, exists, authenticate, create, updatePassword, updateEmail };
+module.exports = { get, exists, authenticate, create, remove, updatePassword, updateEmail };

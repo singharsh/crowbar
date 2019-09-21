@@ -40,7 +40,7 @@ db.connect( async (error) => {
                 res.status(status.UNAUTHORIZED).send();
             }
         } else {
-            res.status(status.INTERNAL_SERVER_ERROR).send();
+            res.status(status.NOT_ACCEPTABLE).send();
         }
     });
 
@@ -53,7 +53,7 @@ db.connect( async (error) => {
                 res.status(status.NOT_FOUND).send();
             }
         } else {
-            res.status(status.INTERNAL_SERVER_ERROR).send();
+            res.status(status.NOT_ACCEPTABLE).send();
         }
     });
 
@@ -83,7 +83,24 @@ db.connect( async (error) => {
                 }
             }
         } else {
-            res.status(status.INTERNAL_SERVER_ERROR).send();
+            res.status(status.NOT_ACCEPTABLE).send();
+        }
+    });
+
+    // remove user
+    app.delete('/users', async (req, res) => {
+        if ('username' in req.query && 'password' in req.query) {
+            if (await users.exists(req.query.username)) {
+                if (! await users.authenticate(req.query.username, req.query.password)) { // authenticate user
+                    res.status(status.UNAUTHORIZED).send();
+                }
+                await users.remove(req.query.username);
+                res.status(status.OK).send();
+            } else {
+                res.status(status.NOT_FOUND).send();
+            }
+        } else {
+            res.status(status.NOT_ACCEPTABLE).send();
         }
     });
 
@@ -91,15 +108,15 @@ db.connect( async (error) => {
     app.get('/repos', async (req, res) => {
         if ('repo' in req.query && 'username' in req.query && 'password' in req.query) {
             if (await repos.exists(req.query.repo)) { // repo exists
-                if (! await users.authenticate(req.puery.username, req.query.password) || ! await repos.hasAccess(req.query.repo, req.query.username)) { // authenticate user and check if user has access
+                if (! await users.authenticate(req.query.username, req.query.password) || ! await repos.hasAccess(req.query.repo, req.query.username)) { // authenticate user and check if user has access
                     res.status(status.UNAUTHORIZED).send();
                 }
-                res.status(status.OK).send(await repos.get(erq.query.repo));
+                res.status(status.OK).send(await repos.get(req.query.repo));
             } else {
                 res.status(status.NOT_FOUND).send();
             }
         } else {
-            res.status(status.INTERNAL_SERVER_ERROR).send();
+            res.status(status.NOT_ACCEPTABLE).send();
         }
     });
 
@@ -107,25 +124,58 @@ db.connect( async (error) => {
     app.post('/repos', async (req, res) => {
         if ('repo' in req.query && 'username' in req.query && 'password' in req.query) {
             if (await repos.exists(req.query.repo)) { // update details if repo exists
-                if (! await users.authenticate(req.puery.username, req.query.password) || ! await repos.isOwner(req.query.repo, req.query.username)) { // authenticate user and check if user has access
+                if (! await users.authenticate(req.query.username, req.query.password) || ! await repos.isOwner(req.query.repo, req.query.username)) { // authenticate user and check if user has access
                     res.status(status.UNAUTHORIZED).send();
                 }
                 if ('owner' in req.query) { // add owner
+                    if (!await users.exists(req.query.owner)) {
+                        res.status(status.NOT_FOUND).send(await repos.get(req.query.repo));
+                    }
                     await repos.addOwner(req.query.repo, req.query.username);
                 }
                 if ('collaborator' in req.query) { // add collaborator
+                    if (!await users.exists(req.query.collaborator)) {
+                        res.status(status.NOT_FOUND).send(await repos.get(req.query.repo));
+                    }
                     await repos.addCollaborator(req.query.repo, req.query.collaborator);
                 }
                 res.status(status.OK).send(await repos.get(req.query.repo));
             } else { // create a new repo
                 if (await repos.create(req.query.repo)) {
+                    await repos.addOwner(req.query.repo, req.query.username);
                     res.status(status.OK).send(await repos.get(req.query.repo));
                 } else {
                     res.status(status.INTERNAL_SERVER_ERROR).send();
                 }
             }
         } else {
-            res.status(status.INTERNAL_SERVER_ERROR).send();
+            res.status(status.NOT_ACCEPTABLE).send();
+        }
+    });
+
+    // remove repo || remove owner or collaborator
+    app.delete('/repos', async (req, res) => {
+        if ('repo' in req.query && 'username' in req.query && 'password' in req.query) {
+            if (await repos.exists(req.query.repo)) { // update details if repo exists
+                if (! await users.authenticate(req.puery.username, req.query.password) || ! await repos.isOwner(req.query.repo, req.query.username)) { // authenticate user and check if user has access
+                    res.status(status.UNAUTHORIZED).send();
+                }
+                if ('owner' in req.query || 'collaborator' in req.query) {
+                    if ('owner' in req.query) { // remove owner
+                        await repos.removeOwner(req.query.repo, req.query.username);
+                    }
+                    if ('collaborator' in req.query) { // remove collaborator
+                        await repos.removeCollaborator(req.query.repo, req.query.collaborator);
+                    }
+                } else {
+                    await repos.remove(req.query.repo); // delete repo
+                }
+                res.status(status.OK).send();
+            } else {
+                res.status(status.NOT_FOUND).send();
+            }
+        } else {
+            res.status(status.NOT_ACCEPTABLE).send();
         }
     });
 });
