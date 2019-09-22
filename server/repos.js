@@ -61,7 +61,7 @@ async function remove(repo) {
 
 async function addOwner(repo, user) {
     // add user as owner of the repo if repo exists and return true, false otherwise
-    if (!await exists(repo) || await isOwner(repo, user)) {
+    if (!await exists(repo) || await hasAccess(repo, user)) {
         return false;
     }
     const db = util.get();
@@ -75,7 +75,7 @@ async function addOwner(repo, user) {
 
 async function addCollaborator(repo, user) {
     // add user as collaborator of the repo if repo exists and return true, false otherwise
-    if (!await exists(repo) || await isCollaborator(repo, user)) {
+    if (!await exists(repo) || await hasAccess(repo, user)) {
         return false;
     }
     const db = util.get();
