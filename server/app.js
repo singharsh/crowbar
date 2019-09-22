@@ -131,8 +131,8 @@ db.connect( async (error) => {
 
     // create repo
     app.post('/repos', async (req, res) => {
-        if ('repo' in req.query && 'username' in req.query && 'password' in req.query) {
-            if (await repos.exists(req.query.repo)) { // repo exists already
+        if ('repo' in req.query && 'username' in req.query) {
+            if (await repos.exists(req.query.repo) || !await users.exists(req.query.username)) { // repo exists already or user doesn't exist
                 res.status(status.NOT_FOUND).send();
             } else { // create a new repo
                 if (await repos.create(req.query.repo)) {
