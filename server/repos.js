@@ -194,7 +194,7 @@ async function removeCommit(repo, user, id) {
         return false;
     }
     const db = util.get();
-    return await db.collection('repos').updateOne({"repo": repo}, {"$pullAll": {"commits": [{"id": id}]}}, {multi: true}).then(result => {
+    return await db.collection('repos').updateOne({"repo": repo}, {"$pull": {"commits": {"id": id}}}, {multi: true}).then(result => {
         const { matchedCount, modifiedCount } = result;
         if (matchedCount && modifiedCount) {
             return true;

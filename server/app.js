@@ -272,12 +272,11 @@ db.connect( async (error) => {
                 if (! await users.authenticate(req.query.username, req.query.password) || ! await repos.isOwner(req.query.repo, req.query.username)) { // authenticate user and check if user has access
                     res.status(status.UNAUTHORIZED).send();
                 }
-                const result = await repos.removeCommit(req.query.repo, req.query.username, req.query.id); // delete commit
+                await repos.removeCommit(req.query.repo, req.query.username, req.query.id); // delete commit
                 const path = config.app.uploads + req.query.repo + '/commitZIP-' + req.query.id + '.zip';
                 if (fs.existsSync(path)) {
                     fs.unlinkSync(path);
                 }
-                console.log(result);
                 res.status(status.OK).send();
             } else {
                 res.status(status.NOT_FOUND).send();
