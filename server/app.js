@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const status = require('http-status-codes');
+const multer  =   require('multer');
+const mkdirp = require('mkdirp');
 const db = require('./db');
 const config = require('./config');
 const users = require('./users');
@@ -14,6 +16,17 @@ app.use(bodyParser.urlencoded({ extended: true }))
 
 // parse requests of content-type - application/json
 app.use(bodyParser.json())
+
+const storage =   multer.diskStorage({
+    destination: function (req, file, callback) {
+        const dir = config.app.uploads + req.query.repo;
+        mkdirp(dir, err => callback(err, dir));
+    },
+    filename: function (req, file, callback) {
+      callback(null, file.fieldname + '-' + req.query.timestamp + '.zip');
+    }
+});
+const upload = multer({ storage : storage}).single('commitZIP');
 
 db.connect( async (error) => {
     if (error) {
@@ -194,6 +207,30 @@ db.connect( async (error) => {
                     await repos.remove(req.query.repo); // delete repo
                     res.status(status.OK).send();
                 }
+            } else {
+                res.status(status.NOT_FOUND).send();
+            }
+        } else {
+            res.status(status.NOT_ACCEPTABLE).send();
+        }
+    });
+
+    // upload commit
+    app.post('/commits', async (req, res) => {
+        if ('message' in req.query && 'repo' in req.query && 'username' in req.query && 'password' in req.query) {
+            if (await repos.exists(req.query.repo)) { // update details if repo exists
+                if (! await users.authenticate(req.query.username, req.query.password) || ! await repos.hasAccess(req.query.repo, req.query.username)) { // authenticate user and check if user has access
+                    res.status(status.UNAUTHORIZED).send();
+                }
+                const timestamp = Date.now();
+                req.query.timestamp = timestamp;
+                upload(req, res, function(err) {
+                    if (err) {
+                        res.status(status.INTERNAL_SERVER_ERROR).send();
+                    } else {
+                        res.status(status.OK).send();
+                    }
+                });
             } else {
                 res.status(status.NOT_FOUND).send();
             }

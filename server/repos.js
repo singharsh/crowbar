@@ -8,7 +8,8 @@ async function get(repo) {
         const result = {
             "repo": items[i].repo,
             "owners": items[i].owners,
-            "collaborators": items[i].collaborators
+            "collaborators": items[i].collaborators,
+            "commits": items[i].commits
         };
         return result;
     }
@@ -40,6 +41,7 @@ async function create(repo) {
         "repo": repo,
         "owners": [],
         "collaborators": [],
+        "commits": [],
         "deleted": false
     });
     return true;
@@ -145,6 +147,21 @@ async function isCollaborator(repo, user) {
 
 async function hasAccess(repo, user) {
     return isOwner(repo, user) || isCollaborator(repo, user);
+}
+
+async function pushCommit(repo, user, message, id) {
+    // TODO: record commit to the repo if the repo exists and the user has access
+    return null;
+}
+
+async function pullCommit(repo, id) {
+    // TODO: return the commit # if the repo and commit exist, null otherwise
+    return null;
+}
+
+async function pullLatest(repo) {
+    // TODO: return the commit # of the latest commit if the repo exists, null otherwise
+    return null;
 }
 
 module.exports = { get, exists, create, remove, addOwner, addCollaborator, removeOwner, removeCollaborator, isOwner, isCollaborator, hasAccess };
