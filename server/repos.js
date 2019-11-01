@@ -1,4 +1,5 @@
 const util = require('./db');
+const date = require('date-and-time');
 
 async function get(repo) {
     // return repo name, owners & collaborators
@@ -150,18 +151,57 @@ async function hasAccess(repo, user) {
 }
 
 async function pushCommit(repo, user, message, id) {
-    // TODO: record commit to the repo if the repo exists and the user has access
-    return null;
+    // record commit to the repo if the repo exists and the user has access
+    if (!await exists(repo) || !await hasAccess(repo, user)) {
+        return null;
+    }
+    const now = date.format(new Date(), 'MMM. D YYYY - HH:mm:ss [GMT]Z');
+    const commit = {
+        "id": id,
+        "user": user,
+        "message": message,
+        "timestamp": now
+    }
+    const db = util.get();
+    return await db.collection('repos').updateOne({"repo": repo}, {"$push": {"commits": commit}}, {}).then(result => {
+        const { matchedCount, modifiedCount } = result;
+        if (matchedCount && modifiedCount) {
+            commit.repo = repo;
+            return commit;
+        }
+    });
 }
 
 async function pullCommit(repo, id) {
-    // TODO: return the commit # if the repo and commit exist, null otherwise
+    // return the commit # if the repo and commit exist, null otherwise
+    const db = util.get();
+    let items = await db.collection('repos').find({"repo": repo}, {}).toArray().then(items => {
+        return items;
+    });
+    for (i = 0; i < items.length; i++) {
+        for (j = 0; j < items[i].commits.length; j++) {
+            if (items[i].commits[j].id == id) {
+                return id;
+            }
+        }
+    }
     return null;
 }
 
-async function pullLatest(repo) {
-    // TODO: return the commit # of the latest commit if the repo exists, null otherwise
-    return null;
+async function removeCommit(repo, user, id) {
+    // FIXME: remove the commit if the commit exists and the user has access to the repo
+    if (!await exists(repo) || !await isOwner(repo, user)) {
+        return false;
+    }
+    const db = util.get();
+    return await db.collection('repos').updateOne({"repo": repo}, {"$pullAll": {"commits": [{"id": id}]}}, {multi: true}).then(result => {
+        const { matchedCount, modifiedCount } = result;
+        if (matchedCount && modifiedCount) {
+            return true;
+        } else {
+            return false;
+        }
+    });
 }
 
-module.exports = { get, exists, create, remove, addOwner, addCollaborator, removeOwner, removeCollaborator, isOwner, isCollaborator, hasAccess };
+module.exports = { get, exists, create, remove, addOwner, addCollaborator, removeOwner, removeCollaborator, isOwner, isCollaborator, hasAccess, pushCommit, pullCommit, removeCommit };

@@ -2,7 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const status = require('http-status-codes');
 const multer  =   require('multer');
-const mkdirp = require('mkdirp');
+const mkdir = require('mkdirp');
+const fs = require("fs");
 const db = require('./db');
 const config = require('./config');
 const users = require('./users');
@@ -20,7 +21,7 @@ app.use(bodyParser.json())
 const storage =   multer.diskStorage({
     destination: function (req, file, callback) {
         const dir = config.app.uploads + req.query.repo;
-        mkdirp(dir, err => callback(err, dir));
+        mkdir(dir, err => callback(err, dir));
     },
     filename: function (req, file, callback) {
       callback(null, file.fieldname + '-' + req.query.timestamp + '.zip');
@@ -218,19 +219,66 @@ db.connect( async (error) => {
     // upload commit
     app.post('/commits', async (req, res) => {
         if ('message' in req.query && 'repo' in req.query && 'username' in req.query && 'password' in req.query) {
-            if (await repos.exists(req.query.repo)) { // update details if repo exists
+            if (await repos.exists(req.query.repo)) {
                 if (! await users.authenticate(req.query.username, req.query.password) || ! await repos.hasAccess(req.query.repo, req.query.username)) { // authenticate user and check if user has access
                     res.status(status.UNAUTHORIZED).send();
                 }
                 const timestamp = Date.now();
                 req.query.timestamp = timestamp;
-                upload(req, res, function(err) {
+                upload(req, res, async function(err) {
                     if (err) {
                         res.status(status.INTERNAL_SERVER_ERROR).send();
                     } else {
-                        res.status(status.OK).send();
+                        res.status(status.OK).send(await repos.pushCommit(req.query.repo, req.query.username, req.query.message, timestamp));
                     }
                 });
+            } else {
+                res.status(status.NOT_FOUND).send();
+            }
+        } else {
+            res.status(status.NOT_ACCEPTABLE).send();
+        }
+    });
+
+    // download commit
+    app.get('/commits', async (req, res) => {
+        if ('repo' in req.query && 'username' in req.query && 'password' in req.query && 'id' in req.query) {
+            if (await repos.exists(req.query.repo)) {
+                if (! await users.authenticate(req.query.username, req.query.password) || ! await repos.hasAccess(req.query.repo, req.query.username)) { // authenticate user and check if user has access
+                    res.status(status.UNAUTHORIZED).send();
+                }
+                if (repos.pullCommit(req.query.repo, req.query.id) != null) {
+                    const path = config.app.uploads + req.query.repo + '/commitZIP-' + req.query.id + '.zip';
+                    if (fs.existsSync(path)) {
+                        res.download(path);
+                    } else {
+                        res.status(status.INTERNAL_SERVER_ERROR).send();
+                    }
+                } else {
+                    res.status(status.NOT_FOUND).send();
+                }
+            } else {
+                res.status(status.NOT_FOUND).send();
+            }
+        } else {
+            res.status(status.NOT_ACCEPTABLE).send();
+        }
+    });
+
+    // delete commit
+    app.delete('/commits', async (req, res) => {
+        if ('repo' in req.query && 'username' in req.query && 'password' in req.query && 'id' in req.query) {
+            if (await repos.exists(req.query.repo)) {
+                if (! await users.authenticate(req.query.username, req.query.password) || ! await repos.isOwner(req.query.repo, req.query.username)) { // authenticate user and check if user has access
+                    res.status(status.UNAUTHORIZED).send();
+                }
+                const result = await repos.removeCommit(req.query.repo, req.query.username, req.query.id); // delete commit
+                const path = config.app.uploads + req.query.repo + '/commitZIP-' + req.query.id + '.zip';
+                if (fs.existsSync(path)) {
+                    fs.unlinkSync(path);
+                }
+                console.log(result);
+                res.status(status.OK).send();
             } else {
                 res.status(status.NOT_FOUND).send();
             }
