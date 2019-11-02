@@ -147,7 +147,7 @@ async function isCollaborator(repo, user) {
 }
 
 async function hasAccess(repo, user) {
-    return isOwner(repo, user) || isCollaborator(repo, user);
+    return await isOwner(repo, user) || await isCollaborator(repo, user);
 }
 
 async function pushCommit(repo, user, message, id) {

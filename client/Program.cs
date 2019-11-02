@@ -9,7 +9,7 @@ namespace crowbar
         {
             try
             {
-                Parser.Default.ParseArguments<LoginOptions, SignUpOptions, UpdateCredentialsOptions, NewOptions, InviteOptions, UninviteOptions>(args)
+                Parser.Default.ParseArguments<LoginOptions, SignUpOptions, UpdateCredentialsOptions, NewOptions, InviteOptions, UninviteOptions, CloneOptions, PushOptions, PullOptions>(args)
                     .MapResult(
                         (Options opts) => opts.Execute(),
                         err => Utils.HandleError());

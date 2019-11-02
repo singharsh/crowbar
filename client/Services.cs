@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Web;
 using Newtonsoft.Json.Linq;
@@ -298,6 +300,85 @@ namespace crowbar
                 try
                 {
                     HttpResponseMessage response = request.DeleteAsync($"{Utils.GetAPIsURL()}/repos?username={username}&password={password}&repo={repo}&collaborator={collaborator}").Result;
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+
+                }
+                catch (HttpRequestException e)
+                {
+                    throw new Exception($"APIs exception - {e.Message}");
+                }
+            }
+        }
+
+        public static bool PullCommit(string username, string password, string repo, string id, string path)
+        {
+            username = HttpUtility.UrlEncode(username);
+            password = HttpUtility.UrlEncode(password);
+            repo = HttpUtility.UrlEncode(repo);
+            id = HttpUtility.UrlEncode(id);
+            using (HttpClient request = new HttpClient())
+            {
+                try
+                {
+                    HttpResponseMessage response = request.GetAsync($"{Utils.GetAPIsURL()}/commits?username={username}&password={password}&repo={repo}&id={id}").Result;
+                    if (response.IsSuccessStatusCode)
+                    {
+                        Stream stream = response.Content.ReadAsStreamAsync().Result;
+                        if (File.Exists(Path.Combine(Path.GetTempPath(), $"commit.zip")))
+                        {
+                            File.Delete(Path.Combine(Path.GetTempPath(), $"commit.zip"));
+                        }
+                        FileStream fs = File.Create(Path.Combine(Path.GetTempPath(), $"commit.zip"));
+                        stream.Seek(0, SeekOrigin.Begin);
+                        stream.CopyTo(fs);
+                        stream.Close();
+                        fs.Close();
+                        if (Directory.Exists(path))
+                        {
+                            ZipFile.ExtractToDirectory(Path.Combine(Path.GetTempPath(), $"commit.zip"), path, overwriteFiles: true);
+                        }
+                        File.Delete(Path.Combine(Path.GetTempPath(), $"commit.zip"));
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+
+                }
+                catch (HttpRequestException e)
+                {
+                    throw new Exception($"APIs exception - {e.Message}");
+                }
+            }
+        }
+
+        public static bool PushCommit(string username, string password, string repo, string message, string path)
+        {
+            username = HttpUtility.UrlEncode(username);
+            password = HttpUtility.UrlEncode(password);
+            repo = HttpUtility.UrlEncode(repo);
+            message = HttpUtility.UrlEncode(message);
+            using (HttpClient request = new HttpClient())
+            {
+                try
+                {
+                    if (Directory.Exists(path))
+                    {
+                        ZipFile.CreateFromDirectory(path, Path.Combine(Path.GetTempPath(), $"commit.zip"));
+                    }
+                    MultipartFormDataContent content = new MultipartFormDataContent();
+                    ByteArrayContent file = new ByteArrayContent(File.ReadAllBytes(Path.Combine(Path.GetTempPath(), $"commit.zip")));
+                    content.Add(file, "commitZIP", "commit.zip");
+                    HttpResponseMessage response = request.PostAsync($"{Utils.GetAPIsURL()}/commits?username={username}&password={password}&repo={repo}&message={message}", content).Result;
+                    File.Delete(Path.Combine(Path.GetTempPath(), $"commit.zip"));
                     if (response.IsSuccessStatusCode)
                     {
                         return true;
