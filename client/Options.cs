@@ -55,6 +55,18 @@ namespace crowbar
 
         public override int Execute()
         {
+            if (!Utils.Matches(UserName, "^[a-z0-9_-]{3,15}$"))
+            {
+                throw new Exception($"The username should be alphanumeric with _ or -.");
+            }
+            if (!Utils.Matches(Password, "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\\$%\\^&\\*])(?=.{8,})"))
+            {
+                throw new Exception($"The password must contain atleast one of each: lowercase alphabet, uppercase alphabet, number, special character [!@#\\$%\\^&] & must be atleast 10 characters long.");
+            }
+            if (!Utils.Matches(Email, "^[\\w!#$%&'*+/=?`{|}~^-]+(?:\\.[\\w!#$%&'*+/=?`{|}~^-]+)*@↵(?:[A - Z0 - 9 -] +\\.) +[A - Z]{ 2,6}$"))
+            {
+                throw new Exception($"The email isn't valid.");
+            }
             Password = Utils.SaltAndHashPassword(Password);
             if (Services.GetUser(UserName) != null)
             {
@@ -95,12 +107,20 @@ namespace crowbar
             }
             if (!string.IsNullOrEmpty(Password))
             {
+                if (!Utils.Matches(Password, "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\\$%\\^&\\*])(?=.{8,})"))
+                {
+                    throw new Exception($"The password must contain atleast one of each: lowercase alphabet, uppercase alphabet, number, special character [!@#\\$%\\^&] & must be atleast 10 characters long.");
+                }
                 Password = Utils.SaltAndHashPassword(Password);
                 Services.UpdatePassword((string)user["username"], (string)user["password"], Password);
                 Utils.SaveCredentials((string)user["username"], Password);
             }
             if (!string.IsNullOrEmpty(Email))
             {
+                if (!Utils.Matches(Email, "^[\\w!#$%&'*+/=?`{|}~^-]+(?:\\.[\\w!#$%&'*+/=?`{|}~^-]+)*@↵(?:[A - Z0 - 9 -] +\\.) +[A - Z]{ 2,6}$"))
+                {
+                    throw new Exception($"The email isn't valid.");
+                }
                 Services.UpdateEmail((string)user["username"], (string)user["password"], Email);
             }
             return 0;
@@ -122,6 +142,10 @@ namespace crowbar
 
         public override int Execute()
         {
+            if (!Utils.Matches(Repo, "^[a-z0-9_-]{3,15}$"))
+            {
+                throw new Exception($"The repo name should be alphanumeric with _ or -.");
+            }
             JObject user;
             if ((user = Utils.GetSavedCredentials()) == null)
             {

@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 
 namespace crowbar
@@ -152,6 +153,19 @@ namespace crowbar
             // SHA 256
             HashAlgorithm algorithm = SHA256.Create();
             return Convert.ToBase64String(algorithm.ComputeHash(Encoding.UTF8.GetBytes(password)));
+        }
+
+        public static bool Matches(string target, string pattern)
+        {
+            Regex regex = new Regex(pattern);
+            if (regex.IsMatch(target))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public static int HandleError()
