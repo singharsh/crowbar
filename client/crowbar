@@ -1,0 +1,4 @@
+#! /bin/bash
+
+dotnet run --project /bin/crowbar.csproj ${@:1}
+exit $?
