@@ -458,4 +458,81 @@ namespace crowbar
             return 0;
         }
     }
+
+    [Verb("search", HelpText = "Search a repo or user.")]
+    public class SearchOptions : Options
+    {
+        [Option('r', "repo",
+            HelpText = "Repo name.",
+            Required = false)]
+        public string Repo { get; set; }
+
+        [Option('u', "user-name",
+            HelpText = "User name.",
+            Required = false)]
+        public string UserName { get; set; }
+
+        public override int Execute()
+        {
+            JObject user;
+            if ((user = Utils.GetSavedCredentials()) == null)
+            {
+                throw new Exception($"User not logged in.");
+            }
+            if (!Services.AuthenticateUser((string)user["username"], (string)user["password"]))
+            {
+                throw new Exception($"User credentials are incorrect. Please login with the correct username & password.");
+            }
+            if (!string.IsNullOrEmpty(Repo))
+            {
+                JObject repo;
+                if ((repo = Services.GetRepo((string)user["username"], (string)user["password"], Repo)) == null)
+                {
+                    throw new Exception($"Repo doesn't exist or you don't have access to it.");
+                }
+                Console.WriteLine();
+                Console.WriteLine($"Repo: {(string)repo["repo"]}");
+                Console.WriteLine();
+                Console.WriteLine($"Owners:");
+                Console.WriteLine();
+                JArray owners = (JArray)repo["owners"];
+                foreach (string owner in owners)
+                {
+                    Console.WriteLine($"{owner}");
+                }
+                Console.WriteLine();
+                Console.WriteLine($"Collaborators:");
+                Console.WriteLine();
+                JArray collaborators = (JArray)repo["collaborators"];
+                foreach (string collaborator in collaborators)
+                {
+                    Console.WriteLine($"{collaborator}");
+                }
+                Console.WriteLine();
+                Console.WriteLine($"Commits:");
+                Console.WriteLine();
+                JArray commits = (JArray)repo["commits"];
+                foreach (JObject commit in commits)
+                {
+                    Console.WriteLine($"ID: {(long)commit["id"]}");
+                    Console.WriteLine($"User: {(string)commit["user"]}");
+                    Console.WriteLine($"Message: \"{(string)commit["message"]}\"");
+                    Console.WriteLine($"Time Stamp: {(string)commit["timestamp"]}");
+                    Console.WriteLine();
+                }
+            }
+            if (!string.IsNullOrEmpty(UserName))
+            {
+                if ((user = Services.GetUser(UserName)) == null)
+                {
+                    throw new Exception($"User doesn't exist");
+                }
+                Console.WriteLine();
+                Console.WriteLine($"User Name: {(string)user["username"]}");
+                Console.WriteLine($"Email: {(string)user["email"]}");
+                Console.WriteLine();
+            }
+            return 0;
+        }
+    }
 }
