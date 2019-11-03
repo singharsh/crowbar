@@ -26,7 +26,8 @@ namespace crowbar
         public override int Execute()
         {
             Password = Utils.SaltAndHashPassword(Password);
-            if (!Services.AuthenticateUser(UserName, Password))
+            // BUG: don't check the password
+            if (Services.GetUser(UserName) == null)
             {
                 throw new Exception($"Invalid user name / password.");
             }
@@ -107,10 +108,13 @@ namespace crowbar
             }
             if (!string.IsNullOrEmpty(Password))
             {
+                // BUG: don't check password pattern while updating
+                /*
                 if (!Utils.Matches(Password, "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\\$%\\^&\\*])(?=.{8,})"))
                 {
                     throw new Exception($"The password must contain atleast one of each: lowercase alphabet, uppercase alphabet, number, special character [!@#\\$%\\^&] & must be atleast 10 characters long.");
                 }
+                */
                 Password = Utils.SaltAndHashPassword(Password);
                 Services.UpdatePassword((string)user["username"], (string)user["password"], Password);
                 // BUG: don't save the credentials locally after updating
@@ -174,7 +178,8 @@ namespace crowbar
             }
             else
             {
-                Path = System.IO.Path.Combine(Directory.GetCurrentDirectory(), Repo);
+                // BUG: creates subdirectory
+                Path = System.IO.Path.Combine(Directory.GetCurrentDirectory(), Repo, Repo);
             }
             if (Directory.Exists(Path))
             {
@@ -445,7 +450,8 @@ namespace crowbar
                         {
                             throw new Exception($"An unexpected error occurred while cloning the repo.");
                         }
-                        flag = true;
+                        // BUG: always error out with commit not found even if the pull worked
+                        // flag = true;
                         break;
                     }
                 }
