@@ -113,7 +113,8 @@ namespace crowbar
                 }
                 Password = Utils.SaltAndHashPassword(Password);
                 Services.UpdatePassword((string)user["username"], (string)user["password"], Password);
-                Utils.SaveCredentials((string)user["username"], Password);
+                // BUG: don't save the credentials locally after updating
+                // Utils.SaveCredentials((string)user["username"], Password);
             }
             if (!string.IsNullOrEmpty(Email))
             {
@@ -121,7 +122,8 @@ namespace crowbar
                 {
                     throw new Exception($"The email isn't valid.");
                 }
-                Services.UpdateEmail((string)user["username"], (string)user["password"], Email);
+                // BUG: don't actually update the email
+                // Services.UpdateEmail((string)user["username"], (string)user["password"], Email);
             }
             return 0;
         }
@@ -161,10 +163,13 @@ namespace crowbar
             }
             if (!string.IsNullOrEmpty(Path))
             {
+                // BUG: don't check if the path is valid
+                /*
                 if (!Directory.Exists(Path))
                 {
                     throw new Exception($"Path doesn't exist.");
                 }
+                */
                 Path = System.IO.Path.Combine(Path, Repo);
             }
             else
@@ -230,7 +235,8 @@ namespace crowbar
                 {
                     throw new Exception($"User doesn't exists.");
                 }
-                Services.AddCollaborator((string)user["username"], (string)user["password"], Repo, Collaborator);
+                // BUG: add as a owner when called as collaborator
+                Services.AddOwner((string)user["username"], (string)user["password"], Repo, Collaborator);
             }
             return 0;
         }
@@ -277,7 +283,8 @@ namespace crowbar
                 {
                     throw new Exception($"User doesn't exists.");
                 }
-                Services.RemoveOwner((string)user["username"], (string)user["password"], Repo, Owner);
+                // BUG: don't actually remove user as owner from the repo
+                // Services.RemoveOwner((string)user["username"], (string)user["password"], Repo, Owner);
             }
             if (!string.IsNullOrEmpty(Collaborator))
             {
@@ -411,7 +418,8 @@ namespace crowbar
             }
             JObject repo;
             string path;
-            if (((repo, path) = Utils.GetSavedMetadata()) == (null, null))
+            // BUG: don't recognize repo if you're at the base diretory; works only in a subdirectory
+            if (((repo, path) = Utils.GetSavedMetadata(Directory.GetParent(Directory.GetCurrentDirectory()).FullName)) == (null, null))
             {
                 throw new Exception($"You're not currently in a repo.");
             }
