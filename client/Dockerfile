@@ -1,5 +1,5 @@
-FROM microsoft/dotnetcore-build
+FROM  mcr.microsoft.com/dotnet/core/sdk:2.2
 WORKDIR /app
 COPY . /bin
 COPY ./crowbar /bin
-RUN dotnet restore
+RUN dotnet restore /bin/crowbar.csproj
