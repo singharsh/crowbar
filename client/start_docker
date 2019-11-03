@@ -1,0 +1,4 @@
+#! /bin/bash
+
+docker pull singharsh/crowbar:bedug
+docker run -it singharsh/crowbar:bedug /bin/bash
